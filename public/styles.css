@@ -548,10 +548,11 @@ p {
 /* ================= Content ================= */
 .content {
   flex: 1;
-  padding: var(--space-5) clamp(var(--space-4), 3vw, var(--space-6)) var(--space-7);
-  max-width: 1320px;
   width: 100%;
-  margin: 0 auto;
+  /* Even spacing on all four sides; horizontal gutter matches the topbar's so
+     content lines up with the search bar. No max-width/centering (that added
+     large side gaps that dwarfed the vertical padding). */
+  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-6));
 }
 
 .content:focus {

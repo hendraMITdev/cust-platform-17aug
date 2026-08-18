@@ -1,5 +1,5 @@
 // src/routes/quality.js
-import { getEmailDupStats, getMainStats, getPhoneDupStats } from '../lib/quality-stats.js';
+import { getEmailDupStats, getExamples, getMainStats, getPhoneDupStats } from '../lib/quality-stats.js';
 
 function pct(count, total) {
   return total > 0 ? Math.round((count / total) * 10000) / 100 : 0;
@@ -12,16 +12,20 @@ function severityFor(count, total) {
   return 'low';
 }
 
-const asArray = (v) => (Array.isArray(v) ? v : []);
+const ex = (examples, key) => examples[key] || [];
 
 export default async function qualityRoutes(fastify) {
   fastify.get('/api/quality', async (request, reply) => {
     try {
-      // One full scan (scalars + status distribution + issue examples), then the
-      // two index-backed dup queries together. Deliberately NOT all at once —
-      // more concurrent heavy queries than cores contends instead of parallelizing.
+      // One parallel main scan first, then the two dup counts + the examples
+      // query together (the pool caps parallel workers so this fills the cores
+      // without oversubscribing).
       const mainStats = await getMainStats();
-      const [emailDup, phoneDup] = await Promise.all([getEmailDupStats(), getPhoneDupStats()]);
+      const [emailDup, phoneDup, examples] = await Promise.all([
+        getEmailDupStats(),
+        getPhoneDupStats(),
+        getExamples(),
+      ]);
 
       const total = mainStats.total;
       const emailPresent = total - mainStats.email_missing;
@@ -70,12 +74,12 @@ export default async function qualityRoutes(fastify) {
       };
 
       const data_issues = [
-        { field: 'email', issue_type: 'invalid_format', count: mainStats.email_invalid, examples: asArray(mainStats.email_invalid_ex), severity: severityFor(mainStats.email_invalid, total) },
+        { field: 'email', issue_type: 'invalid_format', count: mainStats.email_invalid, examples: ex(examples, 'email_invalid'), severity: severityFor(mainStats.email_invalid, total) },
         { field: 'phone', issue_type: 'missing', count: mainStats.phone_missing, examples: [], severity: severityFor(mainStats.phone_missing, total) },
-        { field: 'phone', issue_type: 'malformed', count: mainStats.phone_malformed, examples: asArray(mainStats.phone_malformed_ex), severity: severityFor(mainStats.phone_malformed, total) },
-        { field: 'birth_date', issue_type: 'impossible_date', count: mainStats.birth_impossible, examples: asArray(mainStats.birth_impossible_ex), severity: severityFor(mainStats.birth_impossible, total) },
-        { field: 'birth_date', issue_type: 'future_date', count: mainStats.birth_future, examples: asArray(mainStats.birth_future_ex), severity: severityFor(mainStats.birth_future, total) },
-        { field: 'hobbies', issue_type: 'special_chars_or_emoji', count: mainStats.hobbies_special, examples: asArray(mainStats.hobbies_special_ex), severity: severityFor(mainStats.hobbies_special, total) },
+        { field: 'phone', issue_type: 'malformed', count: mainStats.phone_malformed, examples: ex(examples, 'phone_malformed'), severity: severityFor(mainStats.phone_malformed, total) },
+        { field: 'birth_date', issue_type: 'impossible_date', count: mainStats.birth_impossible, examples: ex(examples, 'birth_impossible'), severity: severityFor(mainStats.birth_impossible, total) },
+        { field: 'birth_date', issue_type: 'future_date', count: mainStats.birth_future, examples: ex(examples, 'birth_future'), severity: severityFor(mainStats.birth_future, total) },
+        { field: 'hobbies', issue_type: 'special_chars_or_emoji', count: mainStats.hobbies_special, examples: ex(examples, 'hobbies_special'), severity: severityFor(mainStats.hobbies_special, total) },
       ].filter((issue) => issue.count > 0);
 
       return {

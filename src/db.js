@@ -46,7 +46,12 @@ export const reportPool = new Pool({
   statement_timeout: 120000,
   query_timeout: 120000,
   idleTimeoutMillis: 30000,
-  options: '-c work_mem=256MB',
+  // work_mem avoids disk-spilling hash aggregates. The parallel-cost GUCs force
+  // parallel plans on the big scans: without them Postgres refuses to parallelize
+  // an aggregate whose group count approaches its row count (near-unique emails),
+  // dropping to a single core — see DATABASE_NOTES.md. Capped at 2 workers/gather
+  // so two concurrent analytical queries fill the 4 cores without oversubscribing.
+  options: '-c work_mem=256MB -c parallel_setup_cost=0 -c parallel_tuple_cost=0 -c min_parallel_table_scan_size=0 -c max_parallel_workers_per_gather=2',
 });
 
 export async function checkDbConnection() {
