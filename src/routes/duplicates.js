@@ -23,9 +23,10 @@ const NAME_CANDIDATE_LIMIT = 200;
 //     because two full-table aggregates contend for the same ~4 CPU workers.
 //     Fix: run them sequentially. Slower to look at, but faster in practice
 //     and avoids the contention blowup.
-// total_pairs (true combinatorial count, not just the sample) comes from the
-// same single pass via a window function — spec explicitly allows
-// "bounded/estimated" here.
+// total_pairs = number of duplicate records (rows beyond the first occurrence
+// per value), from the same single pass via a window function. This matches
+// /api/metrics `duplicates` for consistency — the combinatorial pair count
+// explodes into the hundreds of millions on high-cardinality groups.
 // ---------------------------------------------------------------------------
 async function sampleDuplicatePairs({ valueExpr, notEmptyCondition, sampleSize }) {
   const { rows } = await reportPool.query(`
@@ -35,7 +36,7 @@ async function sampleDuplicatePairs({ valueExpr, notEmptyCondition, sampleSize }
       WHERE ${notEmptyCondition}
       GROUP BY ${valueExpr}
     )
-    SELECT v, c, sum(c * (c - 1) / 2) FILTER (WHERE c > 1) OVER () AS total_pairs
+    SELECT v, c, sum(c - 1) FILTER (WHERE c > 1) OVER () AS total_pairs
     FROM g
     WHERE c > 1
     ORDER BY c DESC
