@@ -31,6 +31,10 @@ await fastify.register(qualityRoutes);
 await fastify.register(duplicatesRoutes);
 await fastify.register(userProfileRoutes);
 
+// Live API docs: Swagger UI at /docs/ (public/docs/index.html) reads /openapi.json.
+// This exact route just adds the no-trailing-slash convenience redirect.
+fastify.get('/docs', (request, reply) => reply.redirect('/docs/'));
+
 // Generic error handler: never leak stack traces, connection strings, or raw
 // pg error internals to the client. Full detail still goes to the structured
 // server-side logger for debugging.

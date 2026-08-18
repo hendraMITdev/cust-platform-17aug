@@ -1,0 +1,88 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Customer Intelligence Platform API",
+    "version": "1.0.0",
+    "description": "Search, data-quality, duplicate-detection, and user-profile API over 22.4M PostgreSQL records. All queries parameterized; phones masked in search; analytics computed live (no cache). 17 Agustus Challenge."
+  },
+  "servers": [{ "url": "http://168.144.241.41:3000", "description": "VPS deployment" }],
+  "tags": [
+    { "name": "Health" }, { "name": "Search" }, { "name": "Data Quality" },
+    { "name": "Duplicates" }, { "name": "User Profile" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"], "summary": "Liveness + record count (R1)",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "example": { "status": "ready", "total_records": 15000000, "database": "connected", "timestamp": "2026-08-18T05:00:00.000Z" } } } } }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["Health"], "summary": "Liveness (WAJIB grader path)",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "example": { "ok": true, "status": "running", "total_records": 15000000, "database": "connected", "timestamp": "2026-08-18T05:00:00.000Z" } } } } }
+      }
+    },
+    "/api/search": {
+      "get": {
+        "tags": ["Search"], "summary": "Search customers (R2)",
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" }, "example": "budi" },
+          { "name": "type", "in": "query", "required": true, "schema": { "type": "string", "enum": ["name", "email", "phone", "user_id"] }, "example": "name" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10, "maximum": 100 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": { "200": { "description": "Results (msisdn masked). Email/phone/user_id exact; name fuzzy.", "content": { "application/json": { "example": { "query": "budi", "type": "name", "limit": 10, "offset": 0, "results": [{ "user_id": 65070641, "full_name": "Budi", "user_email": "budi11743@gmail.com", "msisdn": "6285****9199", "status": 1, "created_at": "2019-05-12T00:21:00.000Z" }], "total": 1000, "took_ms": 88 } } } } }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "tags": ["Data Quality"], "summary": "Compact quality summary (WAJIB). Live; ~34s.",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "example": { "duplicates": 982381, "missing_fields": 8754782, "quality_score": 41.63 } } } } }
+      }
+    },
+    "/api/quality": {
+      "get": {
+        "tags": ["Data Quality"], "summary": "Full quality breakdown (R3). Live/exact; ~43s.",
+        "responses": { "200": { "description": "Per-field metrics + status distribution + data issues", "content": { "application/json": { "example": { "total_records": 14999896, "analyzed_at": "2026-08-18T05:01:00.000Z", "quality_metrics": { "email": { "present": 14999896, "missing_count": 0, "missing_percent": 0, "unique": 14701522, "duplicate_count": 286769, "invalid_format": 2841254 }, "phone": { "present": 12052001, "missing_count": 2947895, "missing_percent": 19.65, "unique": 10815687, "duplicate_count": 695612, "malformed": 150723 }, "birth_date": { "missing_count": 7984842, "impossible_dates": 1019932, "future_dates": 220 }, "hobbies": { "null_count": 13237519, "with_emoji": 299645 }, "status": { "distribution": { "-1": 1348853, "1": 13597726, "2": 52843 } } }, "data_issues": [{ "field": "email", "issue_type": "invalid_format", "count": 2841254, "severity": "medium" }] } } } } }
+      }
+    },
+    "/api/duplicates/{user_id}": {
+      "get": {
+        "tags": ["Duplicates"], "summary": "Per-user duplicate candidates (R4). <2s.",
+        "parameters": [
+          { "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" }, "example": 43795603 },
+          { "name": "threshold", "in": "query", "schema": { "type": "number", "default": 0.7 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": { "200": { "description": "Candidates with similarity + confidence", "content": { "application/json": { "example": { "user_id": 43795603, "full_name": "Eko Wahyu Budiono", "possible_duplicates": [{ "user_id": 7654321, "similarity_score": 0.94, "match_reasons": ["phone_exact_match", "name_similarity_0.92"], "confidence": "high" }], "total_possible_duplicates": 2 } } } } }
+      }
+    },
+    "/api/duplicates": {
+      "post": {
+        "tags": ["Duplicates"], "summary": "Batch duplicate pairs (WAJIB). ~43s.",
+        "responses": { "200": { "description": "Sample pairs + total count", "content": { "application/json": { "example": { "duplicates": [{ "id1": 89235000, "id2": 89235001, "similarity": 1.0 }], "count": 982381 } } } } }
+      }
+    },
+    "/api/duplicates/find": {
+      "get": {
+        "tags": ["Duplicates"], "summary": "Cluster accounts by a shared signal (R4).",
+        "parameters": [
+          { "name": "method", "in": "query", "schema": { "type": "string", "enum": ["ip_address", "order_history", "activity_pattern"], "default": "ip_address" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "Duplicate groups with confidence", "content": { "application/json": { "example": { "method": "ip_address", "duplicate_groups": [{ "group_id": 1, "shared_attribute": "192.168.206.236", "attribute_type": "ip_address", "user_count": 57, "user_ids": [311790, 577471], "user_names": ["User A", "User B"], "first_activity": "2026-05-19T09:47:16Z", "last_activity": "2026-08-14T15:52:07Z", "confidence": "high" }], "total_groups_found": 50, "total_duplicate_users": 2577 } } } } }
+      }
+    },
+    "/api/user-profile/{user_id}": {
+      "get": {
+        "tags": ["User Profile"], "summary": "Profile + orders + transactions + activity, 4-table JOIN (R5 load-test target). ~18ms.",
+        "parameters": [{ "name": "user_id", "in": "path", "required": true, "schema": { "type": "integer" }, "example": 26091048 }],
+        "responses": {
+          "200": { "description": "Aggregated profile", "content": { "application/json": { "example": { "user_id": 26091048, "full_name": "Rif Khy", "user_email": "rifkhi30@gmail.com", "msisdn": "6285****8984", "status": 1, "order_count": 1, "transaction_total": 368.44, "activity_count": 0, "last_activity": null, "created_at": "2017-12-24T05:51:00.000Z" } } } },
+          "404": { "description": "User not found" }
+        }
+      }
+    }
+  }
+}
