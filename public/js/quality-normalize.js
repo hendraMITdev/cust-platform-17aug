@@ -65,8 +65,8 @@ export function normalizeMetric(name, metric) {
   const missing = metric.missing_count ?? 0;
   const missingPct = safePct(missing, total, metric.missing_percent);
   const facts = [
-    ['Unique', formatNumber(metric.unique)],
-    ['Duplicates', formatNumber(metric.duplicate_count)],
+    ['Unique', metric.unique == null ? '…' : formatNumber(metric.unique)],
+    ['Duplicates', metric.duplicate_count == null ? '…' : formatNumber(metric.duplicate_count)],
   ];
   if (name === 'email') facts.push(['Invalid format', formatNumber(metric.invalid_format)]);
   if (name === 'phone') facts.push(['Malformed', formatNumber(metric.malformed)]);

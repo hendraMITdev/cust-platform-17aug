@@ -70,6 +70,13 @@ export function fetchQuality() {
   return apiFetch('/api/quality', { timeoutMs: 90000 });
 }
 
+// Fast base pass (~8s): every quality signal EXCEPT the two slow distinct/duplicate
+// counts, which come back null. Panels render this first, then patch in the exact
+// dup counts from a full fetchQuality() — same data, still live, just not blocking.
+export function fetchQualityBase() {
+  return apiFetch('/api/quality?dups=0', { timeoutMs: 25000 });
+}
+
 export function fetchDuplicates(userId, { threshold = 0.7, limit = 10 } = {}) {
   const params = new URLSearchParams({ threshold: String(threshold), limit: String(limit) });
   return apiFetch(`/api/duplicates/${encodeURIComponent(userId)}?${params.toString()}`, { timeoutMs: 10000 });

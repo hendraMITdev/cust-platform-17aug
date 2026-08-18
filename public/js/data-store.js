@@ -5,7 +5,7 @@
 // NOT cached server-side and can take a few seconds, so we fetch it once and only
 // re-fetch when the user asks (via loadQuality({ force: true })).
 
-import { fetchQuality, fetchHealth, ApiError } from './api.js';
+import { fetchQuality, fetchQualityBase, fetchHealth, ApiError } from './api.js';
 
 const listeners = new Set();
 
@@ -13,6 +13,7 @@ let state = {
   quality: null,
   qualityError: null,
   qualityLoading: false,
+  qualityDupsPending: false,
   qualityComputeMs: null,
   health: null,
   healthChecked: false,
@@ -34,26 +35,43 @@ export function getState() {
 
 export async function loadQuality({ force = false } = {}) {
   if (state.qualityLoading) return;
-  if (state.quality && !force) return;
+  if (state.quality && !state.qualityDupsPending && !force) return;
 
   state = { ...state, qualityLoading: true, qualityError: null };
   emit();
 
   const startedAt = performance.now();
+
+  // Phase 1 — fast base (~8s): every quality signal except the two slow
+  // distinct/duplicate counts. Renders the whole dashboard immediately.
+  let base;
   try {
-    const quality = await fetchQuality();
-    state = {
-      ...state,
-      quality,
-      qualityLoading: false,
-      qualityComputeMs: Math.round(performance.now() - startedAt),
-    };
+    base = await fetchQualityBase();
   } catch (err) {
     state = {
       ...state,
       qualityLoading: false,
       qualityError: err instanceof ApiError ? err.message : 'Could not load data quality metrics.',
     };
+    emit();
+    return;
+  }
+  state = {
+    ...state,
+    quality: base,
+    qualityLoading: false,
+    qualityDupsPending: true,
+    qualityComputeMs: Math.round(performance.now() - startedAt),
+  };
+  emit();
+
+  // Phase 2 — exact dup counts patched in when ready (~43s). A failure here leaves
+  // the base view intact; the two dup fields just stop showing "computing".
+  try {
+    const full = await fetchQuality();
+    state = { ...state, quality: full, qualityDupsPending: false, qualityComputeMs: Math.round(performance.now() - startedAt) };
+  } catch {
+    state = { ...state, qualityDupsPending: false };
   }
   emit();
 }

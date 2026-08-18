@@ -43,7 +43,7 @@ export function initStatGrid() {
 
   subscribe((state) => {
     clear(grid);
-    const { quality, qualityLoading, qualityError, health, healthChecked } = state;
+    const { quality, qualityLoading, qualityError, qualityDupsPending, health, healthChecked } = state;
     const qm = quality?.quality_metrics || {};
     const placeholder = qualityLoading ? '…' : '—';
     // All five quality-derived cards share one failure reason, but each still
@@ -77,15 +77,15 @@ export function initStatGrid() {
     }));
     grid.appendChild(statCard({
       title: 'Duplicate emails',
-      value: qm.email ? formatNumber(qm.email.duplicate_count) : placeholder,
-      sub: errorSub || 'Shared across accounts',
+      value: qm.email && qm.email.duplicate_count != null ? formatNumber(qm.email.duplicate_count) : (qualityDupsPending ? '…' : placeholder),
+      sub: errorSub || (qm.email && qm.email.duplicate_count == null && qualityDupsPending ? 'computing exact count…' : 'Shared across accounts'),
       icon: 'copy',
       tint: 'amber',
     }));
     grid.appendChild(statCard({
       title: 'Duplicate phones',
-      value: qm.phone ? formatNumber(qm.phone.duplicate_count) : placeholder,
-      sub: errorSub || 'Shared across accounts',
+      value: qm.phone && qm.phone.duplicate_count != null ? formatNumber(qm.phone.duplicate_count) : (qualityDupsPending ? '…' : placeholder),
+      sub: errorSub || (qm.phone && qm.phone.duplicate_count == null && qualityDupsPending ? 'computing exact count…' : 'Shared across accounts'),
       icon: 'copy',
       tint: 'rose',
     }));
