@@ -63,8 +63,11 @@ export function fetchSearch({ q, type, limit, offset }) {
   return apiFetch(`/api/search?${params.toString()}`, { timeoutMs: 10000 });
 }
 
+// /api/quality computes exact distinct/duplicate counts live over 15M rows —
+// ~43s warm, more when the cache is cold. Timeout is generous so the dashboard
+// waits for the honest number instead of falsely reporting a hang.
 export function fetchQuality() {
-  return apiFetch('/api/quality', { timeoutMs: 15000 });
+  return apiFetch('/api/quality', { timeoutMs: 90000 });
 }
 
 export function fetchDuplicates(userId, { threshold = 0.7, limit = 10 } = {}) {
@@ -77,7 +80,7 @@ export function fetchDuplicates(userId, { threshold = 0.7, limit = 10 } = {}) {
 // generous on purpose so a slow-but-honest response isn't mistaken for a hang.
 export function fetchDuplicateGroups({ method, limit = 50 } = {}) {
   const params = new URLSearchParams({ method: method ?? 'ip_address', limit: String(limit) });
-  return apiFetch(`/api/duplicates/find?${params.toString()}`, { timeoutMs: 35000 });
+  return apiFetch(`/api/duplicates/find?${params.toString()}`, { timeoutMs: 90000 });
 }
 
 export function fetchUserProfile(userId) {
