@@ -1,0 +1,64 @@
+# docker-compose.yml — Postgres 17 (durable, tuned) + Fastify API
+# Deploy on the VPS in /root/challenge so the existing `challenge_pgdata` volume (with imported data) is reused.
+services:
+  postgres:
+    image: postgres:17
+    container_name: challenge_pg
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: challenge_db
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=2GB
+      - -c
+      - effective_cache_size=5GB
+      - -c
+      - maintenance_work_mem=512MB
+      - -c
+      - work_mem=32MB
+      - -c
+      - synchronous_commit=off
+      - -c
+      - wal_compression=on
+      - -c
+      - max_worker_processes=4
+      - -c
+      - max_parallel_workers=4
+      - -c
+      - max_parallel_workers_per_gather=2
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - jit=off
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: "1gb"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d challenge_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: challenge_api
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/challenge_db
+      PORT: "3000"
+      PGPOOL_MAX: "40"
+      PGPOOL_MIN: "10"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

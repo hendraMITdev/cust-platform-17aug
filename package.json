@@ -1,0 +1,20 @@
+{
+  "name": "customer-intelligence-platform",
+  "version": "1.0.0",
+  "description": "High-performance customer intelligence API over 22.4M PostgreSQL records — 17 Agustus Challenge",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/compress": "^8.0.1",
+    "@fastify/static": "^8.0.3",
+    "fastify": "^5.2.0",
+    "pg": "^8.13.1"
+  }
+}
