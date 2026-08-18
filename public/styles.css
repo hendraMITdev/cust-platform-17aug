@@ -1307,6 +1307,10 @@ th[aria-sort="descending"] .sort-icon {
   gap: 6px;
   padding-top: var(--space-2);
   border-top: 1px solid var(--border);
+  /* Grid stretches all cards to equal height; pinning the facts block to the
+     bottom keeps every card's divider aligned even when a field has fewer facts
+     (e.g. Hobbies), so the row reads as uniform. */
+  margin-top: auto;
 }
 
 .metric-fact {
