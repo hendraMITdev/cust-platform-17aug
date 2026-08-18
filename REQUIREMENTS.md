@@ -6,16 +6,27 @@
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` risk/attention
 
+## Build status (live)
+- [x] DB imported — 14,999,896 users + orders/txns/activity (141s)
+- [x] Indexes built — GIN trgm name, partial btree email/phone, FK joins, + `idx_activity_ip`, `idx_activity_ip_user`, `idx_activity_hour_user` (name fuzzy ~90ms, exact <1ms)
+- [x] Repo public + scaffold pushed · `docker-compose.yml` · `README.md` · `DATABASE_NOTES.md` · `TEST_RESULTS.md`
+- [x] Backend API built + live-tested — 9 endpoints (health, /api/health, search, metrics, quality, POST+GET duplicates, duplicates/find, user-profile). Real SoC (db/lib/routes), 2 pools, cache fully removed. user-profile 18–23ms, search 17–320ms, all indexed.
+- [x] Frontend restructured — hash-routed pages (sidebar nav, tab bar removed), + User Profile + Duplicate Finder pages, 6 even KPI cards, pill search
+- [~] Optimizing slow analytics — `/api/quality` + `/api/metrics` (was 115s from 9-way query fan-out → folded to main-scan + 2 index dup queries) and `/api/duplicates/find`
+- [ ] Deploy full stack to VPS + verify all endpoints
+- [ ] Load test R5 (user-profile, 100 concurrent, 60s) + tune
+- [ ] Push final app + submit before 14:00
+
 ---
 
 ## 0. Global rules & submission (gate — lose everything if missed)
-- [ ] GitHub repo **public** (account: hendraMITdev)
-- [ ] Single `docker-compose.yml` at repo root
-- [ ] `README.md` with setup instructions
-- [ ] `DATABASE_NOTES.md` (schema changes, indexes, optimizations, design decisions)
-- [ ] Source code committed (`src/`, `public/`, `.gitignore`)
+- [x] GitHub repo **public** (hendraMITdev/cust-platform-17aug — scaffold pushed)
+- [x] Single `docker-compose.yml` at repo root
+- [x] `README.md` with setup instructions
+- [x] `DATABASE_NOTES.md` (schema changes, indexes, optimizations, design decisions)
+- [~] Source code committed (`.gitignore` ✓; `src/` + `public/` building)
 - [ ] `docker-compose up` → `curl http://localhost:3000/api/health` returns 200 + JSON (grader reproduces locally)
-- [ ] Dataset stays in **PostgreSQL** (✓ Postgres 17)
+- [x] Dataset stays in **PostgreSQL** (Postgres 17)
 - [ ] **No pre-computed results** — all calculations live (caching OK for search per spec; metrics/quality NOT cached)
 - [ ] No external API calls (docs/learning only)
 - [ ] **UI/Frontend WAJIB** — dashboard, not CLI-only
@@ -83,6 +94,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` risk/attention
 ## Round 4 — Duplicate Detection (300 pts)
 **`GET /api/duplicates/:id?threshold=0.7&limit=10`** exact shape: `{user_id,user_email,user_phone,full_name,possible_duplicates:[{user_id,user_email,user_phone,full_name,similarity_score,match_reasons[],confidence}],total_possible_duplicates}`
 **`POST /api/duplicates`** (WAJIB) → `{duplicates:[{id1,id2,similarity}],count}`
+**`GET /api/duplicates/find?method=ip_address&limit=50`** (NEW — organizer) → `{method,duplicate_groups:[{group_id,shared_attribute,attribute_type,user_count,user_ids[],user_names[],first_activity,last_activity,confidence}],total_groups_found,total_duplicate_users}`
+- [ ] method=ip_address (HIGH): GROUP BY ws_user_activity.ip_address HAVING >1 distinct user, ordered by count — real clusters (50+/IP)
+- [ ] method=order_history (MEDIUM) · method=activity_pattern (LOW) — same shape
 ### Accuracy — 150
 - [ ] exact email match (case-insensitive) — 50
 - [ ] exact phone match (normalized: strip +,-,space) — 50
@@ -94,7 +108,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` risk/attention
 - [ ] only status=1 accounts · ordered by score desc · < 2s · efficient (no full scan)
 
 ## Round 5 — Concurrent Load Test (600 pts) ⭐ FINAL BOSS
-Mix: 40% email · 30% phone · 20% name · 10% duplicates. 100 concurrent, 60s, **5s hard timeout/req**.
+**CHANGED (organizer): load now hits `GET /api/user-profile/:user_id` at 100% of requests** — 4-table LEFT JOIN (user+orders+transactions+activity) → profile + order_count + transaction_total + activity_count + last_activity. 100 concurrent, 60s, **5s hard timeout/req**.
+- [ ] `/api/user-profile/:id` correct 4-table JOIN + aggregates, sub-50ms (FK indexes cover it)
 - [ ] correct responses > 95% success — 300
 - [ ] avg response time < 1000ms — 150
 - [ ] p99 latency < 2000ms — 100

@@ -62,3 +62,6 @@ services:
 
 volumes:
   pgdata:
+    # Pinned so the deployed stack reuses the already-imported data volume on the VPS,
+    # while still creating a fresh empty volume on any other machine.
+    name: challenge_pgdata

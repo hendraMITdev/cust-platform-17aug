@@ -1,0 +1,322 @@
+<!-- public/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Intelligence — Admin</title>
+  <meta name="description" content="Live search, data quality, and duplicate detection across 15M customer records." />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">Skip to content</a>
+
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <span class="brand-name">Customer Intelligence</span>
+          <span class="brand-badge">ADMIN</span>
+        </div>
+        <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Primary">
+        <div class="nav-group">
+          <span class="nav-group-label">Overview</span>
+          <a href="#/overview" class="nav-item is-active" data-route="overview" aria-current="page">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Overview</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <span class="nav-group-label">Tools</span>
+          <a href="#/search" class="nav-item" data-route="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <span>Search</span>
+          </a>
+          <a href="#/quality" class="nav-item" data-route="quality">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="5" width="4" height="15" rx="1"/><rect x="17" y="9" width="4" height="11" rx="1"/></svg>
+            <span>Data Quality</span>
+          </a>
+          <a href="#/duplicates" class="nav-item" data-route="duplicates">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span>Duplicates</span>
+          </a>
+          <a href="#/user-profile" class="nav-item" data-route="user-profile">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>User Profile</span>
+          </a>
+        </div>
+
+        <div class="nav-group nav-group-system">
+          <span class="nav-group-label">System</span>
+          <div class="nav-status" id="apiStatus" role="status" aria-live="polite">
+            <span class="status-dot" data-state="checking"></span>
+            <span class="status-label">Checking API…</span>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="main-col">
+      <header class="topbar">
+        <button type="button" class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+
+        <form class="topbar-search" id="topbarSearchForm" role="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <label for="topbarSearchInput" class="visually-hidden">Search customers</label>
+          <input type="text" id="topbarSearchInput" placeholder="Search customers by name, email, phone, or ID…" autocomplete="off" />
+          <span class="kbd-chip" aria-hidden="true">⌘K</span>
+        </form>
+
+        <div class="topbar-actions">
+          <div class="bell-wrap">
+            <button type="button" class="icon-btn" id="bellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Recent activity">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+              <span class="bell-dot" id="bellDot" hidden></span>
+            </button>
+            <div class="bell-dropdown" id="bellDropdown" hidden>
+              <h2>Recent activity</h2>
+              <ul id="activityList"></ul>
+              <p class="activity-empty" id="activityEmpty">No activity yet — try a search.</p>
+            </div>
+          </div>
+          <div class="user-chip">
+            <span class="avatar">CI</span>
+            <span class="user-chip-label">Admin</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="content" id="mainContent" tabindex="-1">
+        <!-- ===== Overview ===== -->
+        <section id="panel-overview" data-route="overview" class="panel">
+          <div class="panel-head">
+            <h1>Overview</h1>
+            <p class="panel-desc">A live snapshot of data completeness and account status across the customer base.</p>
+          </div>
+          <section class="stat-grid" id="statGrid" aria-label="Key metrics"></section>
+          <div id="overviewState"></div>
+          <div class="chart-row" id="overviewCharts" hidden>
+            <article class="panel-card chart-card">
+              <div class="chart-card-head">
+                <h2>Data completeness</h2>
+                <p class="chart-card-sub">Present vs. missing, by field</p>
+              </div>
+              <div class="chart-mount" id="completenessChartMount"></div>
+            </article>
+            <article class="panel-card chart-card chart-card-donut">
+              <div class="chart-card-head">
+                <h2>Status distribution</h2>
+                <p class="chart-card-sub" id="donutSub"></p>
+              </div>
+              <div class="chart-mount chart-mount-donut" id="statusDonutMount"></div>
+              <ul class="chart-legend" id="statusLegend"></ul>
+            </article>
+          </div>
+          <article class="panel-card issues-preview-card" id="issuesPreviewCard" hidden>
+            <div class="issues-preview-head">
+              <h2>Top data issues</h2>
+              <button type="button" class="btn-link" id="viewAllIssuesBtn">
+                View all
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+            </div>
+            <ul class="issues-preview-list" id="issuesPreviewList"></ul>
+          </article>
+        </section>
+
+        <!-- ===== Search ===== -->
+        <section id="panel-search" data-route="search" class="panel" hidden>
+          <div class="panel-head">
+            <h1>Search customers</h1>
+            <p class="panel-desc">Exact match on email, phone, and user ID. Fuzzy match on name.</p>
+          </div>
+          <form class="search-form" id="searchForm">
+            <div class="field field-query">
+              <label for="searchQuery">Query</label>
+              <div class="input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="text" id="searchQuery" name="q" autocomplete="off" />
+              </div>
+            </div>
+            <div class="field field-type">
+              <label for="searchType">Type</label>
+              <select id="searchType" name="type">
+                <option value="name" selected>Name</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone</option>
+                <option value="user_id">User ID</option>
+              </select>
+            </div>
+            <div class="field field-limit">
+              <label for="searchLimit">Per page</label>
+              <select id="searchLimit" name="limit">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" id="searchSubmit">
+              <span class="btn-label">Search</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <div class="panel-meta" id="searchMeta" aria-live="polite"></div>
+
+          <div class="table-card">
+            <div class="table-scroll" id="resultsTableWrap">
+              <table class="data-table" id="resultsTable">
+                <thead>
+                  <tr>
+                    <th aria-sort="none"><button type="button" class="th-sort" data-sort="user_id">User ID<svg class="sort-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></th>
+                    <th aria-sort="none"><button type="button" class="th-sort" data-sort="full_name">Name<svg class="sort-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th aria-sort="none"><button type="button" class="th-sort" data-sort="status">Status<svg class="sort-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></th>
+                    <th aria-sort="none"><button type="button" class="th-sort" data-sort="created_at">Created<svg class="sort-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></th>
+                    <th class="cell-action">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+              </table>
+            </div>
+            <div class="table-state" id="searchState"></div>
+          </div>
+
+          <div class="pagination" id="searchPagination" hidden>
+            <button type="button" class="btn btn-ghost" id="prevPage">Prev</button>
+            <span id="pageInfo" class="page-info"></span>
+            <button type="button" class="btn btn-ghost" id="nextPage">Next</button>
+          </div>
+        </section>
+
+        <!-- ===== Data Quality ===== -->
+        <section id="panel-quality" data-route="quality" class="panel" hidden>
+          <div class="panel-head panel-head-row">
+            <div>
+              <h1>Data quality</h1>
+              <p class="panel-desc">Live-computed completeness and validity across all records.</p>
+            </div>
+            <button type="button" class="btn btn-ghost" id="qualityRefreshBtn">
+              <span class="btn-label">Refresh</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+
+          <div class="panel-meta" id="qualityMeta"></div>
+          <div id="qualityState"></div>
+
+          <div class="metric-grid" id="metricGrid" hidden></div>
+
+          <article class="panel-card issues-card" id="issuesCard" hidden>
+            <h2>Top data issues</h2>
+            <div class="table-scroll">
+              <table class="data-table" id="issuesTable">
+                <thead>
+                  <tr><th>Field</th><th>Issue</th><th>Count</th><th>Severity</th></tr>
+                </thead>
+                <tbody id="issuesBody"></tbody>
+              </table>
+            </div>
+            <p class="table-empty-note" id="issuesEmpty" hidden>No data issues detected.</p>
+          </article>
+        </section>
+
+        <!-- ===== Duplicates ===== -->
+        <section id="panel-duplicates" data-route="duplicates" class="panel" hidden>
+          <div class="panel-head">
+            <h1>Duplicate detection</h1>
+            <p class="panel-desc">Look up a user ID to find likely duplicate accounts, or scan for clusters that share a signal.</p>
+          </div>
+          <form class="dup-form" id="dupForm">
+            <div class="field">
+              <label for="dupUserId">User ID</label>
+              <input type="text" inputmode="numeric" pattern="[0-9]*" id="dupUserId" placeholder="e.g. 4821093" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="dupSubmit">
+              <span class="btn-label">Find duplicates</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <div id="dupState"></div>
+
+          <div id="dupResult" hidden>
+            <div class="target-card" id="dupTarget"></div>
+            <h2 class="dup-list-heading">Possible duplicates <span id="dupCount" class="count-pill"></span></h2>
+            <ul class="dup-list" id="dupList"></ul>
+          </div>
+
+          <section class="finder-section" id="dupFinderSection">
+            <div class="panel-head">
+              <h2>Duplicate finder</h2>
+              <p class="panel-desc">Cluster accounts by a shared signal — IP address, order history, or activity timing.</p>
+            </div>
+            <form class="dup-form" id="dupFinderForm">
+              <div class="field">
+                <label for="dupFinderMethod">Method</label>
+                <select id="dupFinderMethod" name="method">
+                  <option value="ip_address" selected>IP address</option>
+                  <option value="order_history">Order history</option>
+                  <option value="activity_pattern">Activity pattern</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary" id="dupFinderSubmit">
+                <span class="btn-label">Find groups</span>
+                <span class="btn-spinner" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <div class="panel-meta" id="dupFinderMeta" aria-live="polite"></div>
+            <div id="dupFinderState"></div>
+            <ul class="dup-list" id="dupFinderGroups" hidden></ul>
+          </section>
+        </section>
+
+        <!-- ===== User Profile ===== -->
+        <section id="panel-user-profile" data-route="user-profile" class="panel" hidden>
+          <div class="panel-head">
+            <h1>User profile</h1>
+            <p class="panel-desc">Look up a single account's profile, orders, transactions, and activity.</p>
+          </div>
+          <form class="dup-form" id="profileForm">
+            <div class="field">
+              <label for="profileUserId">User ID</label>
+              <input type="text" inputmode="numeric" pattern="[0-9]*" id="profileUserId" placeholder="e.g. 4821093" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="profileSubmit">
+              <span class="btn-label">Look up</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <div class="panel-meta" id="profileMeta" aria-live="polite"></div>
+          <div id="profileState"></div>
+
+          <div id="profileResult" hidden>
+            <article class="target-card" id="profileCard"></article>
+            <div class="profile-stat-grid" id="profileStatGrid"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <p>Customer Intelligence Platform — 17 Agustus Challenge</p>
+      </footer>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
