@@ -58,7 +58,9 @@ async function sampleDuplicatePairs({ valueExpr, notEmptyCondition, sampleSize }
     .filter((ids) => ids && ids.length >= 2)
     .map((ids) => ({ id1: ids[0], id2: ids[1], similarity: 1.0 }));
 
-  return { pairs, totalPairs: rows[0].total_pairs };
+  // sum(bigint) comes back as numeric → a string; Number() so the caller's
+  // `email.totalPairs + phone.totalPairs` adds instead of concatenating.
+  return { pairs, totalPairs: Number(rows[0].total_pairs) };
 }
 
 async function postDuplicatesHandler(request, reply) {
