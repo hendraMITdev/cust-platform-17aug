@@ -6,6 +6,7 @@ import fastifyCompress from '@fastify/compress';
 import fastifyStatic from '@fastify/static';
 
 import { closePools } from './db.js';
+import { startQualityRefreshLoop } from './lib/quality-cache.js';
 import healthRoutes from './routes/health.js';
 import searchRoutes from './routes/search.js';
 import metricsRoutes from './routes/metrics.js';
@@ -67,6 +68,10 @@ const port = Number(process.env.PORT) || 3000;
 
 try {
   await fastify.listen({ host: '0.0.0.0', port });
+  // Warm + keep the exact quality/metrics snapshot fresh in the background so the
+  // heavy analytics endpoints serve instantly. Non-blocking: the server is already
+  // listening; endpoints fall back to a live compute until the first refresh lands.
+  startQualityRefreshLoop(fastify.log);
 } catch (err) {
   fastify.log.error({ err }, 'failed to start server');
   process.exit(1);

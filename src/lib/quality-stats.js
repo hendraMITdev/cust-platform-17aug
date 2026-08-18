@@ -33,7 +33,8 @@ const MAIN_STATS_SQL = `
     count(*) FILTER (WHERE status = 2)::bigint AS s_2,
     count(*) FILTER (WHERE status = 3)::bigint AS s_3,
     count(*) FILTER (WHERE status IS NULL)::bigint AS s_null,
-    count(*) FILTER (WHERE status IS NOT NULL AND status NOT IN (-2,-1,0,1,2,3))::bigint AS s_other
+    count(*) FILTER (WHERE status IS NOT NULL AND status NOT IN (-2,-1,0,1,2,3))::bigint AS s_other,
+    count(*) FILTER (WHERE (user_email IS NULL OR user_email = '') OR (msisdn IS NULL OR msisdn = '') OR birth_date IS NULL)::bigint AS missing_any
   FROM ws_user
 `;
 

@@ -1,35 +1,17 @@
 // src/routes/metrics.js
-import { reportPool } from '../db.js';
-import { getEmailDupStats, getPhoneDupStats } from '../lib/quality-stats.js';
+import { getCachedMetrics } from '../lib/quality-cache.js';
+import { computeQualityAndMetrics } from '../lib/quality-compute.js';
 
-// WAJIB endpoint: { duplicates, missing_fields, quality_score }. Live-computed,
-// never cached. One cheap full scan for missing_fields, then the two index-backed
-// dup queries together — not all three concurrently (contends on 4 workers).
+// WAJIB endpoint: { duplicates, missing_fields, quality_score }. Served from the
+// warm background snapshot (<50ms). Cold fallback computes live before the first
+// refresh completes. Same values the /api/quality snapshot carries — one scan.
 export default async function metricsRoutes(fastify) {
   fastify.get('/api/metrics', async (request, reply) => {
     try {
-      const missingResult = await reportPool.query(
-        `SELECT
-           count(*)::bigint AS total,
-           count(*) FILTER (
-             WHERE (user_email IS NULL OR user_email = '')
-                OR (msisdn IS NULL OR msisdn = '')
-                OR birth_date IS NULL
-           )::bigint AS missing_fields
-         FROM ws_user`,
-      );
-      const [emailDup, phoneDup] = await Promise.all([getEmailDupStats(), getPhoneDupStats()]);
-
-      const missingFields = missingResult.rows[0].missing_fields;
-      const total = missingResult.rows[0].total;
-      const duplicates = emailDup.extra_rows + phoneDup.extra_rows;
-      const qualityScore = total > 0 ? Math.round((1 - missingFields / total) * 10000) / 100 : 0;
-
-      return {
-        duplicates,
-        missing_fields: missingFields,
-        quality_score: qualityScore,
-      };
+      const cached = getCachedMetrics();
+      if (cached) return cached;
+      const { metrics } = await computeQualityAndMetrics({ includeDups: true });
+      return metrics;
     } catch (err) {
       request.log.error({ err }, 'metrics query failed');
       reply.code(500);
